@@ -11,14 +11,20 @@ $groupDisplayNameSuffix = "_PIM"
 function Set-EntraIdGroup([string]$displayName) {
     $group = Get-MgGroup -Filter "displayName eq '$displayName'"
 
-    if(!$group) {
+    if (!$group) {
         Write-Debug "Creating group $displayName + $groupDisplayNameSuffix..."
 
-        $group = New-MgGroup -DisplayName $displayName + $groupDisplayNameSuffix `
-                             -MailEnabled $false `
-                             -SecurityEnabled $true `
-                             -Owners [] `
-                             -IsAssignableToRole $false
+        try {
+            $group = New-MgGroup -DisplayName $displayName + $groupDisplayNameSuffix `
+                -MailEnabled $false `
+                -SecurityEnabled $true `
+                -Owners [] `
+                -IsAssignableToRole $false
+        }
+        catch {
+            Write-Error "Failed to create group $displayName + $groupDisplayNameSuffix : $_"
+            throw
+        }
 
         Write-Debug "Created group $displayName + $groupDisplayNameSuffix"
     }
@@ -35,38 +41,38 @@ function Set-EntraIdGroup([string]$displayName) {
 function Get-EntraIdPolicyRoleManagementPolicyRules() {
     $policyRules = @(
         [Microsoft.Graph.PowerShell.Models.IMicrosoftGraphUnifiedRoleManagementPolicyRule]@{
-            "@odata.type" = "#microsoft.graph.unifiedRoleManagementPolicyExpirationRule"
-            Id = "Expiration_EndUser_Assignment"
+            "@odata.type"        = "#microsoft.graph.unifiedRoleManagementPolicyExpirationRule"
+            Id                   = "Expiration_EndUser_Assignment"
             isExpirationRequired = $false
-            maximumDuration = "PT8H"
-            Target = @{
-                "@odata.type" = "microsoft.graph.unifiedRoleManagementPolicyRuleTarget"
-                Caller = "EndUser"
-                Operations = @(
+            maximumDuration      = "PT8H"
+            Target               = @{
+                "@odata.type"       = "microsoft.graph.unifiedRoleManagementPolicyRuleTarget"
+                Caller              = "EndUser"
+                Operations          = @(
                     "all"
-                    )
-                Level = "Assignment"
+                )
+                Level               = "Assignment"
                 InheritableSettings = @(
                 )
-                EnforcedSettings = @(
-            )
-        }
+                EnforcedSettings    = @(
+                )
+            }
         }
         [Microsoft.Graph.PowerShell.Models.IMicrosoftGraphUnifiedRoleManagementPolicyRule]@{
             "@odata.type" = "#microsoft.graph.unifiedRoleManagementPolicyEnablementRule"
-            Id = "Enablement_EndUser_Assignment"
-            EnabledRules = @("MultiFactorAuthentication")
-            Target = @{
-                "@odata.type" = "microsoft.graph.unifiedRoleManagementPolicyRuleTarget"
-                Caller = "EndUser"
-                Operations = @(
+            Id            = "Enablement_EndUser_Assignment"
+            EnabledRules  = @("MultiFactorAuthentication")
+            Target        = @{
+                "@odata.type"       = "microsoft.graph.unifiedRoleManagementPolicyRuleTarget"
+                Caller              = "EndUser"
+                Operations          = @(
                     "all"
-                    )
-                Level = "Assignment"
+                )
+                Level               = "Assignment"
                 InheritableSettings = @(
                 )
-                EnforcedSettings = @(
-            )
+                EnforcedSettings    = @(
+                )
             }
         }
     )
@@ -89,10 +95,11 @@ function Set-EntraIdPolicyRoleManagementPolicy([string]$memberPolicyId) {
 
         try {
             Update-MgPolicyRoleManagementPolicyRule -UnifiedRoleManagementPolicyId $memberPolicyId `
-                                                    -UnifiedRoleManagementPolicyRuleId $policyRule.Id `
-                                                    -BodyParameter $policyRule `
-                                                    -ErrorAction Stop
-        } catch {
+                -UnifiedRoleManagementPolicyRuleId $policyRule.Id `
+                -BodyParameter $policyRule `
+                -ErrorAction Stop
+        }
+        catch {
             Write-Error "Failed to update policy rule $($policyRule.Id): $_"
             throw
         }
@@ -110,7 +117,7 @@ function Set-EntraIdPolicyRoleManagementPolicy([string]$memberPolicyId) {
 function Set-EntraIdPim([string]$groupId) {
     $group = Get-MgGroup -Filter "id eq '$groupId'"
 
-    if(!$group) {
+    if (!$group) {
         Write-Error "Group $groupId not found"
         throw
     }
@@ -118,12 +125,70 @@ function Set-EntraIdPim([string]$groupId) {
     #get the specific policy for the member role, not the owner role
     $memberPolicyId = Get-MgPolicyRoleManagementPolicyAssignment -Filter "scopeId eq '$($group.Id)' and scopeType eq 'Group' and roleDefinitionId eq 'member'"
 
-    if(!$memberPolicyId) {
+    if (!$memberPolicyId) {
         Write-Error "Policy for member role not found for group $($group.Id)"
         throw
     }
 
     Set-EntraIdPolicyRoleManagementPolicy -MemberPolicyId $memberPolicyId.PolicyId
+}
+
+<#
+.SYNOPSIS
+    Sets the access review for a group in Entra ID
+.PARAMETER groupId
+    The id of the group to set the access review for
+#>
+function Set-EntraIdAccessReview([string]$groupId) {
+    $group = Get-MgGroup -Filter "id eq '$groupId'"
+
+    if (!$group) {
+        Write-Error "Group $groupId not found"
+        throw
+    }
+
+    $bodyParameter = @{
+        displayName              = "Annual_AppEntitlement_AccessReview - $($group.DisplayName)"
+        descriptionForAdmins     = "Typically used to assign access or role inside an Azure Application"
+        descriptionForReviewers  = "Typically used to assign access or role inside an Azure Application"
+        scope                    = @{
+            query     = "/groups/$($group.Id)/members"
+            queryType = "MicrosoftGraph"
+        }
+        instanceEnumerationScope = @{
+            query     = "/groups/$($group.Id)"
+            queryType = "MicrosoftGraph"
+        }
+        settings                 = @{
+            mailNotificationsEnabled        = $true
+            reminderNotificationsEnabled    = $true
+            justificationRequiredOnApproval = $false
+            defaultDecisionEnabled          = $true
+            defaultDecision                 = "Deny"
+            instanceDurationInDays          = 14
+            autoApplyDecisionsEnabled       = $true
+            recommendationsEnabled          = $true
+            recurrence                      = @{
+                pattern = $null
+                range   = @{
+                    type                = "numbered"
+                    numberOfOccurrences = 0
+                    recurrenceTimeZone  = $null
+                    startDate           = "2022-02-11"
+                    endDate             = $null
+                }
+            }
+        }
+    }   
+
+    try {
+        New-MgIdentityGovernanceAccessReviewDefinition -BodyParameter $bodyParameter `
+            -ErrorAction Stop | Out-Null
+    }
+    catch {
+        Write-Error "Failed to create access review for group $($group.Id): $_"
+        throw
+    }
 }
 
 <#
@@ -135,21 +200,21 @@ function Set-EntraIdPim([string]$groupId) {
 function Get-EnvironmentVariables() {
     $tenantID = $env:TENANT_ID
 
-    if(!$tenantID) {
+    if (!$tenantID) {
         Write-Error "TENANT_ID environment variable is not set"
         throw
     }
 
     $clientID = $env:CLIENT_ID
 
-    if(!$clientID) {
+    if (!$clientID) {
         Write-Error "CLIENT_ID environment variable is not set"
         throw
     }
 
     $clientSecret = $env:CLIENT_SECRET
 
-    if(!$clientSecret) {
+    if (!$clientSecret) {
         Write-Error "CLIENT_SECRET environment variable is not set"
         throw
     }
@@ -170,12 +235,12 @@ function Get-EnvironmentVariables() {
     The access token
 #>
 function Get-MgAccessToken([string]$tenantID, [string]$clientID, [string]$clientSecret) {
-    $body =  @{
-            Grant_Type    = "client_credentials"
-            Scope         = "https://graph.microsoft.com/.default"
-            Client_Id     = $clientID
-            Client_Secret = $clientSecret
-        }
+    $body = @{
+        Grant_Type    = "client_credentials"
+        Scope         = "https://graph.microsoft.com/.default"
+        Client_Id     = $clientID
+        Client_Secret = $clientSecret
+    }
 
     Write-Debug "Getting access token"
         
@@ -195,3 +260,4 @@ Export-ModuleMember -Function Set-EntraIdGroup
 Export-ModuleMember -Function Set-EntraIdPim
 Export-ModuleMember -Function Get-EnvironmentVariables
 Export-ModuleMember -Function Get-MgAccessToken
+Export-ModuleMember -Function Set-EntraIdAccessReview

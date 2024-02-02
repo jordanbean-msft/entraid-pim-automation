@@ -25,6 +25,7 @@ try {
     foreach($groupName in $groupNames) {
         $groupId = Set-EntraIdGroup -DisplayName $groupName
         Set-EntraIdPim -GroupId $groupId
+        Set-EntraIdAccessReview -GroupId $groupId
         $groupIds += $groupId
     }
 }

@@ -5,5 +5,6 @@
     'Az' = '11.*'
     'Microsoft.Graph.Authentication' = '2.*'
     'Microsoft.Graph.Beta.Groups' = '2.*'
+    'Microsoft.Graph.Identity.Governance' = '2.*'
     'Microsoft.Graph.Beta.Identity.SignIns' = '2.*'
 }

@@ -11,6 +11,17 @@ This repo shows how to run a PowerShell script inside an Azure Function for mana
 - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Azure subscription & resource group
 
+## Required Entra ID scopes on Microsoft Graph API
+
+**Application**
+- AccessReview.ReadWrite.All
+- RoleAssignmentSchedule.ReadWrite.Directory
+- RoleEligibilitySchedule.ReadWrite.Directory
+- RoleManagementAlert.ReadWrite.Directory
+- RoleManagementPolicy.ReadWrite.AzureADGroup
+
+**NOTE: These permissions will require admin consent**
+
 ## How to use
 
 1.  Deploy the code to Azure Functions
@@ -67,3 +78,4 @@ This repo shows how to run a PowerShell script inside an Azure Function for mana
 - https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/concept-pim-for-groups
 - https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/groups-role-settings#manage-role-settings-by-using-microsoft-graph
 - https://learn.microsoft.com/en-us/powershell/microsoftgraph/how-to-manage-pim-policies?view=graph-powershell-1.0
+- https://learn.microsoft.com/en-us/graph/tutorial-accessreviews-securitygroup?tabs=powershell
