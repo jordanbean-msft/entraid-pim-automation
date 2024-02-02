@@ -55,7 +55,7 @@ function Get-EntraIdPolicyRoleManagementPolicyRules() {
         [Microsoft.Graph.PowerShell.Models.IMicrosoftGraphUnifiedRoleManagementPolicyRule]@{
             "@odata.type" = "#microsoft.graph.unifiedRoleManagementPolicyEnablementRule"
             Id = "Enablement_EndUser_Assignment"
-            EnabledRules = "MultiFactorAuthentication"
+            EnabledRules = @("MultiFactorAuthentication")
             Target = @{
                 "@odata.type" = "microsoft.graph.unifiedRoleManagementPolicyRuleTarget"
                 Caller = "EndUser"

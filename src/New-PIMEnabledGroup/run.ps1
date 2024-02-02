@@ -37,6 +37,8 @@ catch {
             Error = $_.Exception.Message
         }
     })
+
+    return
 }
 
 Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{

@@ -22,9 +22,41 @@ This repo shows how to run a PowerShell script inside an Azure Function for mana
     Content-Type: application/json    
     {
         "GroupNames": [
-            "weatherApi-data-read"
+            "group1"
         ]
     }
+    ```
+
+## How to get valid values for PolicyRoleManagementPolicy Rule
+
+1.  Import the Microsoft Graph cmdlet
+
+    ```powershell
+    Import-Module Microsoft.Graph
+    ```
+
+1.  Authenticate with the Microsoft Graph cmdlet
+
+    ```powershell
+    Connect-MgGraph
+    ```
+
+1.  Get the specific policy assignment for a group & role definition
+
+    ```powershell
+    $assignments = Get-MgPolicyRoleManagementPolicyAssignment -Filter "scopeId eq '$groupId' and scopeType eq 'Group' and roleDefinitionId eq 'member'"
+    ```
+
+1.  Get the list of policy rules available (17 predefined rules)
+
+    ```powershell
+    $policyRules = Get-MgPolicyRoleManagementPolicyRule -UnifiedRoleManagementPolicyId $assignments.PolicyId
+    ```
+
+1.  Print the definition of a specific rule (Expiration_Admin_Eligibility)
+
+    ```powershell
+    $policyRules | ? { $_.Id -eq 'Expiration_Admin_Eligibility' } | ConvertTo-Json
     ```
 
 ## Links
