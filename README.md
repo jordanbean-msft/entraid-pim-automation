@@ -26,6 +26,12 @@ This repo shows how to run a PowerShell script inside an Azure Function for mana
 
 1.  Deploy the code to Azure Functions
 
+    You will need to set the following Application Settings. The PowerShell script expects to pull the following values via environment variables.
+
+    - `TENANT_ID`
+    - `CLIENT_ID`
+    - `CLIENT_SECRET`
+
 1.  Issue a POST command with a list of the groups to create/update
 
     ```bash
