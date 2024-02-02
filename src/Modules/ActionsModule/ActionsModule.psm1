@@ -90,7 +90,8 @@ function Set-EntraIdPolicyRoleManagementPolicy([string]$memberPolicyId) {
         try {
             Update-MgPolicyRoleManagementPolicyRule -UnifiedRoleManagementPolicyId $memberPolicyId `
                                                     -UnifiedRoleManagementPolicyRuleId $policyRule.Id `
-                                                    -BodyParameter $policyRule
+                                                    -BodyParameter $policyRule `
+                                                    -ErrorAction Stop
         } catch {
             Write-Error "Failed to update policy rule $($policyRule.Id): $_"
             throw

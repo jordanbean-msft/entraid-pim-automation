@@ -19,11 +19,11 @@ try {
 
     Write-Debug "Connected to Microsoft Graph API"
 
-    $groups = $Request.Body.Groups
+    $groupNames = $Request.Body.GroupNames
     $groupIds = @()
 
-    foreach($group in $groups) {
-        $groupId = Set-EntraIdGroup -DisplayName $group
+    foreach($groupName in $groupNames) {
+        $groupId = Set-EntraIdGroup -DisplayName $groupName
         Set-EntraIdPim -GroupId $groupId
         $groupIds += $groupId
     }
@@ -39,7 +39,6 @@ catch {
     })
 }
 
-# Associate values to output bindings by calling 'Push-OutputBinding'.
 Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
     StatusCode = [HttpStatusCode]::OK
     Body = @{
