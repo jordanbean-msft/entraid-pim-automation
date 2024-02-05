@@ -1,6 +1,6 @@
-# template-repository
+# EntraId-PIM-Automation
 
-![architecture](./.img/architecture.png)
+This repo shows how to run a PowerShell script inside an Azure Function for managing EntraID PIM groups.
 
 ## Disclaimer
 
@@ -11,6 +11,77 @@
 - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Azure subscription & resource group
 
-## Deployment
+## Required Entra ID scopes on Microsoft Graph API
+
+**Application**
+- AccessReview.ReadWrite.All
+- RoleAssignmentSchedule.ReadWrite.Directory
+- RoleEligibilitySchedule.ReadWrite.Directory
+- RoleManagementAlert.ReadWrite.Directory
+- RoleManagementPolicy.ReadWrite.AzureADGroup
+
+**NOTE: These permissions will require admin consent**
+
+## How to use
+
+1.  Deploy the code to Azure Functions
+
+    You will need to set the following Application Settings. The PowerShell script expects to pull the following values via environment variables.
+
+    - `TENANT_ID`
+    - `CLIENT_ID`
+    - `CLIENT_SECRET`
+
+1.  Issue a POST command with a list of the groups to create/update
+
+    ```bash
+    POST http://localhost:7071/api/New-PIMEnabledGroup
+    Content-Type: application/json    
+    {
+        "GroupNames": [
+            "group1"
+        ]
+    }
+    ```
+
+## How to get valid values for PolicyRoleManagementPolicy Rule
+
+1.  Import the Microsoft Graph cmdlet
+
+    ```powershell
+    Import-Module Microsoft.Graph
+    ```
+
+1.  Authenticate with the Microsoft Graph cmdlet
+
+    ```powershell
+    Connect-MgGraph
+    ```
+
+1.  Get the specific policy assignment for a group & role definition
+
+    ```powershell
+    $assignments = Get-MgPolicyRoleManagementPolicyAssignment -Filter "scopeId eq '$groupId' and scopeType eq 'Group' and roleDefinitionId eq 'member'"
+    ```
+
+1.  Get the list of policy rules available (17 predefined rules)
+
+    ```powershell
+    $policyRules = Get-MgPolicyRoleManagementPolicyRule -UnifiedRoleManagementPolicyId $assignments.PolicyId
+    ```
+
+1.  Print the definition of a specific rule (Expiration_Admin_Eligibility)
+
+    ```powershell
+    $policyRules | ? { $_.Id -eq 'Expiration_Admin_Eligibility' } | ConvertTo-Json
+    ```
 
 ## Links
+
+- https://learn.microsoft.com/en-us/azure/azure-functions/functions-reference-powershell?tabs=portal
+- https://learn.microsoft.com/en-us/azure/azure-functions/create-first-function-vs-code-powershell
+- https://learn.microsoft.com/en-us/powershell/microsoftgraph/get-started?view=graph-powershell-beta
+- https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/concept-pim-for-groups
+- https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/groups-role-settings#manage-role-settings-by-using-microsoft-graph
+- https://learn.microsoft.com/en-us/powershell/microsoftgraph/how-to-manage-pim-policies?view=graph-powershell-1.0
+- https://learn.microsoft.com/en-us/graph/tutorial-accessreviews-securitygroup?tabs=powershell
